@@ -84,10 +84,16 @@ struct PhotoListRowView: View {
     
     //MARK: - Body
     var body: some View {
-        HStack {
-            image
-            Text(photoType.name)
-        }
+        Rectangle()
+            .foregroundColor(.white)
+            .frame(width: .infinity, height: 100)
+            .overlay(alignment: .leading, content: {
+                HStack {
+                    image
+                        .frame(alignment: .leading)
+                    Text(photoType.name)
+                }
+            })
     }
     
     //MARK: - Subviews
