@@ -84,40 +84,46 @@ struct PhotoListRowView: View {
     
     //MARK: - Body
     var body: some View {
-        Rectangle()
-            .foregroundColor(.white)
-            .frame(width: .infinity, height: 100)
-            .overlay(alignment: .leading, content: {
-                HStack {
-                    image
-                        .frame(alignment: .leading)
-                    Text(photoType.name)
-                }
-            })
+        VStack(spacing: 20) {
+            image
+                .frame(maxWidth: .infinity)
+            Text(photoType.name)
+                .font(.system(size: 20))
+                .multilineTextAlignment(.center)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 20)
+                .background(Color.green.opacity(0.2))
+                .cornerRadius(10)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(10)
+        .shadow(radius: 5)
     }
     
     //MARK: - Subviews
     private var image: some View {
         if photoType.image == nil {
             return AnyView(
-                Rectangle()
-                    .background(.gray)
-                    .foregroundColor(.gray)
-                    .frame(width: 50, height: 50)
+                Text("The picture is missing. Click on a cell to take a photo")
+                    .frame(alignment: .center)
+                    .font(.system(size: 32))
+                    .multilineTextAlignment(.center)
             )
         } else {
             return AnyView(
                 AsyncImage(url: photoType.image) { image in
                     image.resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .aspectRatio(contentMode: .fill)
                 } placeholder: {
                     ProgressView()
                 }
-                    .frame(width: 70, height: 70)
+                .frame(width: 400, height: 400)
             )
         }
     }
 }
+
 
 //MARK: -- Work with Photo
 struct ImagePicker: UIViewControllerRepresentable {
