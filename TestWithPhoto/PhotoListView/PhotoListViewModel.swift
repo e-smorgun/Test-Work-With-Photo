@@ -18,11 +18,18 @@ struct PhotoTypeResponse: Codable {
     let content: [PhotoType]
 }
 
+enum SelectedPhotoType {
+    case allPhoto
+    case withPhoto
+    case withoutPhoto
+}
+
 // MARK: -- View Model
 class PhotoListViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var photoTypes = [PhotoType]()
     @Published var selectedImage: UIImage?
+    @Published var selectedPhotoType: SelectedPhotoType = .allPhoto
     
     // MARK: - Properties
     var totalPages = 6
@@ -49,6 +56,12 @@ class PhotoListViewModel: ObservableObject {
         fetchPhotoTypes(page: currentPage)
     }
     
+    func changePhotoType() {
+        currentPage = -1
+        photoTypes.removeAll()
+        fetchPhotoTypes()
+    }
+    
     private func fetchPhotoTypes(page: Int) {
         guard page < totalPages else { return }
         let url = URL(string: "https://junior.balinasoft.com/api/v2/photo/type?page=\(page)")!
@@ -67,8 +80,22 @@ class PhotoListViewModel: ObservableObject {
                 guard let self = self else { return }
                 self.currentPage = response.page
                 self.totalPages = response.totalPages
-                print(self.photoTypes.count)
-                self.photoTypes.append(contentsOf: response.content)
+                switch selectedPhotoType {
+                case .withoutPhoto:
+                    for item in response.content {
+                        if item.image == nil {
+                            self.photoTypes.append(item)
+                        }
+                    }
+                case .withPhoto:
+                    for item in response.content {
+                        if item.image != nil {
+                            self.photoTypes.append(item)
+                        }
+                    }
+                case .allPhoto:
+                    self.photoTypes.append(contentsOf: response.content)
+                }
             })
             .store(in: &cancellables)
     }

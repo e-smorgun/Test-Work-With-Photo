@@ -38,13 +38,22 @@ struct PhotoListView: View {
                             }
                     }
                 }
-                .listStyle(PlainListStyle())
+                .listStyle(.plain)
                 .sheet(isPresented: $isCameraShown, onDismiss: {
                     handlePhotoUpload()
                 }) {
                     ImagePicker(selectedImage: $viewModel.selectedImage, sourceType: .camera)
                         .background(.black)
                 }
+                .navigationBarItems(trailing:
+                    Button(action: {
+                    alertWithSwitch()
+                }) {
+                        Image(systemName: "gearshape")
+                            .font(.title2)
+                            .foregroundColor(.black)
+                    }
+                )
                 .navigationTitle("Photo Types")
             }
             .onAppear {
@@ -75,27 +84,41 @@ struct PhotoListView: View {
         }
         viewModel.selectedImage = nil
     }
+    
+    private func alertWithSwitch() {
+        let alert = UIAlertController(title: "Show Photos", message: nil, preferredStyle: .actionSheet)
+        
+        alert.addAction(UIAlertAction(title: "Show All", style: .default, handler: { _ in
+            viewModel.selectedPhotoType = .allPhoto
+            viewModel.changePhotoType()
+        }))
+        
+        alert.addAction(UIAlertAction(title: "Show With Images", style: .default, handler: { _ in
+            viewModel.selectedPhotoType = .withPhoto
+            viewModel.changePhotoType()
+        }))
+        
+        alert.addAction(UIAlertAction(title: "Show Without Images", style: .default, handler: { _ in
+            viewModel.selectedPhotoType = .withoutPhoto
+            viewModel.changePhotoType()
+        }))
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        
+        UIApplication.shared.windows.first?.rootViewController?.present(alert, animated: true, completion: nil)
+    }
 }
+
 
 // MARK: -- Photo List Row
 struct PhotoListRowView: View {
     //MARK: - Properties
     let photoType: PhotoType
-    
     //MARK: - Body
     var body: some View {
-        VStack(spacing: 20) {
-            image
-                .frame(maxWidth: .infinity)
-            Text(photoType.name)
-                .font(.system(size: 20))
-                .multilineTextAlignment(.center)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 20)
-                .background(Color.green.opacity(0.2))
-                .cornerRadius(10)
-        }
-        .padding()
+        image
+        .frame(maxWidth: .infinity)
+        .listRowSeparator(.hidden)
         .background(Color.white)
         .cornerRadius(10)
         .shadow(radius: 5)
@@ -105,25 +128,66 @@ struct PhotoListRowView: View {
     private var image: some View {
         if photoType.image == nil {
             return AnyView(
-                Text("The picture is missing. Click on a cell to take a photo")
-                    .frame(alignment: .center)
-                    .font(.system(size: 32))
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 10) {
+                    missingPictureView
+                    photoTypeNameView
+                }
             )
         } else {
             return AnyView(
-                AsyncImage(url: photoType.image) { image in
-                    image.resizable()
-                        .aspectRatio(contentMode: .fill)
-                } placeholder: {
-                    ProgressView()
+                ZStack(alignment: .bottom) {
+                    asyncImageView
+                    photoTypeOverlayView
                 }
-                .frame(width: 400, height: 400)
             )
         }
     }
+    
+    private var missingPictureView: some View {
+        Text("The picture is missing. Tap here to take a photo")
+            .font(.system(size: 32))
+            .multilineTextAlignment(.center)
+            .padding(.top, 10)
+    }
+    
+    private var photoTypeNameView: some View {
+        Text(photoType.name)
+            .font(.system(size: 20))
+            .fontWeight(.medium)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 5)
+            .background(Color.green.opacity(0.2))
+            .foregroundColor(.black)
+            .cornerRadius(20)
+            .frame(alignment: .bottom)
+            .padding(.bottom, 10)
+    }
+    
+    private var asyncImageView: some View {
+        AsyncImage(url: photoType.image) { image in
+            image.resizable()
+                .aspectRatio(contentMode: .fill)
+        } placeholder: {
+            ProgressView()
+        }
+        .frame(width: 300, height: 300)
+        .zIndex(0)
+    }
+    
+    private var photoTypeOverlayView: some View {
+        Rectangle()
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity, maxHeight: 40, alignment: .bottom)
+            .opacity(0.6)
+            .zIndex(1)
+            .overlay {
+                Text(photoType.name)
+                    .font(.system(size: 24))
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+            }
+    }
 }
-
 
 //MARK: -- Work with Photo
 struct ImagePicker: UIViewControllerRepresentable {
@@ -137,11 +201,12 @@ struct ImagePicker: UIViewControllerRepresentable {
         let imagePickerController = UIImagePickerController()
         imagePickerController.sourceType = sourceType
         imagePickerController.delegate = context.coordinator
+        imagePickerController.cameraDevice = .rear
         return imagePickerController
     }
     
     func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {
-        // Do nothing
+
     }
     
     func makeCoordinator() -> Coordinator {
